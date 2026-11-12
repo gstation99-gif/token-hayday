@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supercell ID Token Üretici</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --primary: #3b82f6; --success: #10b981; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 30px; margin: 0; }
+        .container { max-width: 600px; margin: auto; display: grid; gap: 20px; }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); }
+        h2 { margin-top: 0; color: #38bdf8; font-size: 1.4rem; }
+        label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+        input { width: 100%; background: #0f172a; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; margin-bottom: 15px; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        .success-box { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); padding: 15px; border-radius: 8px; margin-top: 15px; display: none; }
+        textarea { width: 100%; height: 90px; background: #0f172a; border: 1px solid var(--border); color: #38bdf8; font-family: monospace; font-size: 12px; padding: 8px; border-radius: 6px; resize: none; margin-top: 5px; }
+        .btn-copy { background: var(--success); margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>🔑 Supercell ID Token Üretici (Bulut Servis)</h2>
+            <p style="color: var(--muted); font-size: 13px;">E-posta adresinizi girin, mailinize gelen 6 haneli kodu yazarak HDX botuna uyumlu JWT token'ınızı anında alın.</p>
+            
+            <div id="step1">
+                <label>Supercell ID E-Posta Adresi</label>
+                <input type="email" id="email" placeholder="ornek@gmail.com">
+                <button onclick="sendCode()">E-Postaya Kod Gönder</button>
+            </div>
+
+            <div id="step2" style="display: none; margin-top: 15px;">
+                <label>E-Postanıza Gelen 6 Haneli Onay Kodu</label>
+                <input type="text" id="code" placeholder="123456">
+                <button onclick="verifyCode()" style="background: var(--success);">Kodu Doğrula ve Token Al</button>
+            </div>
+
+            <div id="resultBox" class="success-box">
+                <label style="color: var(--success); font-weight: bold;">HDX Formatı (Tek Satır - Kopyala & Yapıştır):</label>
+                <textarea id="hdxResult" readonly></textarea>
+                <button class="btn-copy" onclick="copyToken()">Panoya Kopyala</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userEmail = "";
+
+        async function sendCode() {
+            userEmail = document.getElementById('email').value.trim();
+            if (!userEmail) return alert("Lütfen geçerli bir e-posta adresi girin!");
+
+            const formData = new FormData();
+            formData.append("email", userEmail);
+
+            const res = await fetch('/api/send-code', { method: 'POST', body: formData });
+            const data = await res.json();
+            alert(data.message);
+            document.getElementById('step2').style.display = 'block';
+        }
+
+        async function verifyCode() {
+            const code = document.getElementById('code').value.trim();
+            if (!code) return alert("Lütfen doğrulama kodunu girin!");
+
+            const formData = new FormData();
+            formData.append("email", userEmail);
+            formData.append("code", code);
+
+            const res = await fetch('/api/verify-code', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (res.ok) {
+                document.getElementById('hdxResult').value = data.hdx_line;
+                document.getElementById('resultBox').style.display = 'block';
+            } else {
+                alert("Hata: " + data.message);
+            }
+        }
+
+        function copyToken() {
+            const text = document.getElementById('hdxResult');
+            text.select();
+            document.execCommand('copy');
+            alert("Token panoya kopyalandı! Şimdi HDX paneline yapıştırabilirsiniz.");
+        }
+    </script>
+</body>
+</html>
